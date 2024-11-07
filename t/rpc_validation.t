@@ -3,7 +3,7 @@ use warnings;
 use 5.14.2;
 use utf8;
 
-use Test::More tests => 30;
+use Test::More tests => 38;
 use Test::NoWarnings;
 
 use Cwd;
@@ -240,3 +240,35 @@ test_validation jsonrpc("system_versions", { data => "something" }),
 test_validation jsonrpc("system_versions", {}),
     no_error,
     "Calling system_versions with empty object succeeds";
+
+test_validation jsonrpc("batch_status", { batch_id => 1 }),
+    no_error,
+    "Calling batch_status with integer batch_id succeeds";
+
+test_validation jsonrpc("batch_status", { batch_id => -1 }),
+    error_bad_params(["/batch_id" => "-1 < minimum(0)"]),
+    "Calling batch_status with negative integer batch_id is an error";
+
+test_validation jsonrpc("batch_status", { batch_id => "1" }),
+    no_error,
+    "Calling batch_status with numeric string batch_id also succeeds";
+
+test_validation jsonrpc("batch_status", { batch_id => "-1" }),
+    error_bad_params(["/batch_id" => "-1 < minimum(0)"]),
+    "Calling batch_status with negative numeric string batch_id is also an error";
+
+test_validation jsonrpc("batch_status", { batch_id => "1abc" }),
+    error_bad_params(["/batch_id" => "Expected number - got string."]),
+    "Calling batch_status with string batch_id is an error";
+
+test_validation jsonrpc("batch_status", { batch_id => JSON::PP::true }),
+    error_bad_params(["/batch_id" => "Expected number - got boolean."]),
+    "Calling batch_status with boolean batch_id is an error";
+
+test_validation jsonrpc("batch_status", { batch_id => undef }),
+    error_bad_params(["/batch_id" => "Expected number - got null."]),
+    "Calling batch_status with null batch_id is an error";
+
+test_validation jsonrpc("batch_status", { batch_id => { totally_not => "a number" } }),
+    error_bad_params(["/batch_id" => "Expected number - got object."]),
+    "Calling batch_status with batch_id of object type is an error";
